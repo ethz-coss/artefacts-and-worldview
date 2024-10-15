@@ -16,15 +16,22 @@ function plot_artefacts(artefacts, position; axargs...)
 end
 
 
-function heatmap_facet(df; position, x, y, N, heatmapargs, axkwargs...)
+function heatmap_facet(df; position, x, y, N, heatmapargs, color=:red, axkwargs...)
     ax = Axis(position; axkwargs...)
     dftv = combine(groupby(df, [y, x]), nrow)
     heatmap!(ax, dftv[:, x], dftv[:, y], dftv.nrow ./ N; heatmapargs...)
     
     dfmv = combine(groupby(df, y), x .=> [mean, iqr, median] .=> [:mean, :iqr, :median])
-    scatter!(ax, dfmv[:, :mean], dfmv[:, y]; color=:black, markersize=5)
-    scatter!(ax, dfmv[:, :median], dfmv[:, y]; color=:red, marker='+', markersize=15)
-    rangebars!(ax, dfmv[:, y], dfmv[:, :median] .- dfmv[:, :iqr]./2, dfmv[:, :mean] .+ dfmv[:, :iqr]./2, color = :red, direction=:x, linewidth=.5)
+    scatter!(ax, dfmv[:, :mean], dfmv[:, y]; color=color, markersize=4)
+    scatter!(ax, dfmv[:, :median], dfmv[:, y]; color=color, marker=:vline, markersize=10)
+
+    grmask = dfmv[:, :iqr] .>.05
+
+    rangebars!(ax, dfmv[grmask, y], dfmv[grmask, :mean] .- .05, dfmv[grmask, :mean] .- dfmv[grmask, :iqr]./2, color = color, direction=:x, linewidth=.5)
+    rangebars!(ax, dfmv[grmask, y], dfmv[grmask, :mean] .+ .05, dfmv[grmask, :mean] .+ dfmv[grmask, :iqr]./2, color = color, direction=:x, linewidth=.5)
+
+    rangebars!(ax, dfmv[.!grmask, y], dfmv[.!grmask, :mean] .- dfmv[.!grmask, :iqr]./2, dfmv[.!grmask, :mean] .+ dfmv[.!grmask, :iqr]./2, color = color, direction=:x, linewidth=.5)
+
     ax
 end
 
